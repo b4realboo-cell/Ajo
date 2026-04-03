@@ -1,0 +1,22 @@
+{
+  "name": "Ajo — Digital Thrift Platform",
+  "short_name": "Ajo",
+  "description": "Private multi-network digital thrift savings platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0e0e0e",
+  "theme_color": "#f7f4ef",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icons/icon-72.png", "sizes": "72x72", "type": "image/png" },
+    { "src": "/icons/icon-96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "/icons/icon-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["finance"],
+  "shortcuts": [
+    { "name": "Pay Dues", "url": "/app/payments", "description": "Quick pay your contribution" },
+    { "name": "My Networks", "url": "/app/networks", "description": "Switch between networks" }
+  ]
+}
