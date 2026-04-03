@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ajo — Digital Thrift Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,800;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0e0e0e;
+    --paper: #f7f4ef;
+    --cream: #ede8df;
+    --gold: #c8963e;
+    --gold-light: #f0c97a;
+    --gold-pale: #fdf5e6;
+    --green: #2d6a4f;
+    --green-light: #52b788;
+    --green-pale: #e8f5ee;
+    --red: #c0392b;
+    --red-pale: #fdecea;
+    --blue: #1a56a0;
+    --blue-pale: #e8f0fa;
+    --muted: #8a8278;
+    --border: #ddd8ce;
+    --card: #ffffff;
+    --shadow: 0 2px 12px rgba(14,14,14,0.07);
+    --shadow-lg: 0 8px 32px rgba(14,14,14,0.12);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-size: 15px;
+  }
+
+  /* ── SHELL ── */
+  #app { max-width: 430px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; position: relative; background: var(--paper); }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--paper);
+    border-bottom: 1.5px solid var(--border);
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .network-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--ink); color: var(--paper);
+    border-radius: 100px; padding: 6px 14px 6px 8px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .network-pill:active { opacity: .75; }
+  .network-dot { width: 20px; height: 20px; border-radius: 50%; background: var(--gold); display: grid; place-items: center; font-size: 9px; font-weight: 700; color: var(--ink); flex-shrink: 0; }
+  .topbar-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 800; letter-spacing: -.5px; }
+  .topbar-actions { display: flex; gap: 8px; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--cream); border: none; display: grid; place-items: center; cursor: pointer; font-size: 17px; transition: background .15s; }
+  .icon-btn:active { background: var(--border); }
+  .badge { position: relative; }
+  .badge::after { content: ''; position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); border: 2px solid var(--paper); }
+
+  /* ── SCROLLABLE CONTENT ── */
+  .content { flex: 1; overflow-y: auto; padding-bottom: 80px; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    background: var(--card); border-top: 1.5px solid var(--border);
+    display: flex; z-index: 100;
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; cursor: pointer; transition: color .15s; color: var(--muted); font-size: 10px; font-weight: 500; }
+  .nav-item.active { color: var(--ink); }
+  .nav-icon { font-size: 20px; }
+  .nav-item.active .nav-icon { filter: none; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── HOME ── */
+  .wallet-card {
+    margin: 20px 20px 0;
+    background: var(--ink);
+    border-radius: var(--radius);
+    padding: 24px;
+    color: var(--paper);
+    position: relative;
+    overflow: hidden;
+  }
+  .wallet-card::before {
+    content: '';
+    position: absolute; top: -40px; right: -40px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--gold) 0%, transparent 70%);
+    opacity: .25;
+  }
+  .wallet-label { font-size: 12px; color: rgba(247,244,239,.6); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 6px; }
+  .wallet-amount { font-family: 'Fraunces', serif; font-size: 38px; font-weight: 800; letter-spacing: -1px; margin-bottom: 2px; }
+  .wallet-sub { font-size: 12px; color: rgba(247,244,239,.5); margin-bottom: 20px; }
+  .wallet-actions { display: flex; gap: 10px; }
+  .wallet-btn { flex: 1; background: rgba(247,244,239,.12); border: 1px solid rgba(247,244,239,.2); color: var(--paper); border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background .15s; }
+  .wallet-btn:active { background: rgba(247,244,239,.22); }
+
+  .section-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 12px; }
+  .section-title { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; }
+  .see-all { font-size: 13px; color: var(--gold); font-weight: 500; cursor: pointer; }
+
+  /* Quick stats */
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px 4px; }
+  .stat-card { background: var(--card); border-radius: var(--radius-sm); padding: 16px; border: 1.5px solid var(--border); }
+  .stat-icon { font-size: 22px; margin-bottom: 8px; }
+  .stat-val { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 700; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Groups */
+  .group-card {
+    background: var(--card); border-radius: var(--radius); margin: 0 20px 12px;
+    border: 1.5px solid var(--border); overflow: hidden; cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .group-card:active { transform: scale(.98); box-shadow: var(--shadow); }
+  .group-card-top { padding: 16px; display: flex; align-items: center; gap: 12px; }
+  .group-avatar { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; flex-shrink: 0; }
+  .group-info { flex: 1; }
+  .group-name { font-weight: 600; font-size: 15px; }
+  .group-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .group-status { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 100px; }
+  .status-active { background: var(--green-pale); color: var(--green); }
+  .status-due { background: #fff3cd; color: #856404; }
+  .status-paid { background: var(--green-pale); color: var(--green); }
+  .group-card-bar { height: 4px; background: var(--cream); }
+  .group-card-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); transition: width .5s; }
+
+  /* Activity */
+  .activity-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--cream); }
+  .activity-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 17px; flex-shrink: 0; }
+  .activity-info { flex: 1; }
+  .activity-title { font-size: 14px; font-weight: 500; }
+  .activity-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .activity-amount { font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px; }
+  .amount-in { color: var(--green); }
+  .amount-out { color: var(--red); }
+
+  /* ── NETWORKS SCREEN ── */
+  .networks-hero { padding: 20px; background: linear-gradient(135deg, var(--ink) 0%, #1a2030 100%); color: var(--paper); }
+  .networks-hero h2 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+  .networks-hero p { font-size: 13px; color: rgba(247,244,239,.6); }
+  .network-list { padding: 16px 20px; }
+  .network-item {
+    background: var(--card); border-radius: var(--radius); border: 1.5px solid var(--border);
+    padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px;
+    cursor: pointer; transition: border-color .15s, box-shadow .15s;
+  }
+  .network-item.active-net { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,150,62,.15); }
+  .network-item:active { transform: scale(.99); }
+  .net-avatar { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font-size: 22px; flex-shrink: 0; font-weight: 700; }
+  .net-info { flex: 1; }
+  .net-name { font-weight: 600; font-size: 15px; }
+  .net-role { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .net-members { font-size: 12px; color: var(--muted); }
+  .net-badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 100px; background: var(--gold-pale); color: var(--gold); border: 1px solid rgba(200,150,62,.3); }
+  .net-badge.owner { background: var(--ink); color: var(--gold); }
+  .fab {
+    position: fixed; bottom: 80px; right: calc(50% - 215px + 20px);
+    width: 54px; height: 54px; border-radius: 50%;
+    background: var(--ink); color: var(--paper);
+    border: none; font-size: 24px; cursor: pointer;
+    box-shadow: var(--shadow-lg); display: grid; place-items: center;
+    transition: transform .15s;
+  }
+  .fab:active { transform: scale(.92); }
+
+  /* ── GROUPS SCREEN ── */
+  .groups-filter { display: flex; gap: 8px; padding: 16px 20px 8px; overflow-x: auto; scrollbar-width: none; }
+  .groups-filter::-webkit-scrollbar { display: none; }
+  .filter-chip { background: var(--card); border: 1.5px solid var(--border); border-radius: 100px; padding: 7px 16px; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: all .15s; }
+  .filter-chip.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .group-detail-card {
+    background: var(--card); border-radius: var(--radius); margin: 8px 20px;
+    border: 1.5px solid var(--border); overflow: hidden; cursor: pointer;
+  }
+  .gdc-header { padding: 16px; border-bottom: 1px solid var(--cream); }
+  .gdc-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .gdc-name { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; }
+  .gdc-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); }
+  .gdc-stat { background: var(--card); padding: 12px; text-align: center; }
+  .gdc-stat-val { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 700; }
+  .gdc-stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .gdc-footer { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .next-payout { font-size: 12px; color: var(--muted); }
+  .next-payout strong { color: var(--ink); }
+  .pay-now-btn { background: var(--gold); color: var(--ink); border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: opacity .15s; }
+  .pay-now-btn:active { opacity: .8; }
+
+  /* ── PAYMENTS SCREEN ── */
+  .pay-screen-hero { padding: 20px; }
+  .pay-screen-hero h2 { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .pay-methods { padding: 0 20px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .pay-method-card {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 16px; display: flex; align-items: center; gap: 14px; cursor: pointer;
+    transition: border-color .15s;
+  }
+  .pay-method-card:active { border-color: var(--gold); }
+  .pay-method-card.recommended { border-color: var(--gold); background: var(--gold-pale); }
+  .pm-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; flex-shrink: 0; }
+  .pm-info { flex: 1; }
+  .pm-name { font-weight: 600; font-size: 14px; }
+  .pm-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .pm-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 100px; background: var(--gold); color: var(--ink); }
+  .pm-arrow { color: var(--muted); font-size: 16px; }
+
+  /* Transaction list */
+  .tx-list { padding: 0 20px; }
+  .tx-date-header { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; padding: 12px 0 6px; }
+  .tx-item { background: var(--card); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; border: 1.5px solid var(--cream); }
+  .tx-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 17px; flex-shrink: 0; }
+  .tx-info { flex: 1; }
+  .tx-title { font-size: 14px; font-weight: 500; }
+  .tx-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .tx-right { text-align: right; }
+  .tx-amount { font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px; }
+  .tx-status { font-size: 11px; margin-top: 2px; }
+  .status-completed { color: var(--green); }
+  .status-pending { color: #856404; }
+  .status-failed { color: var(--red); }
+
+  /* ── PROFILE SCREEN ── */
+  .profile-hero { padding: 24px 20px 20px; display: flex; align-items: center; gap: 16px; background: linear-gradient(180deg, var(--cream) 0%, transparent 100%); }
+  .profile-avatar { width: 68px; height: 68px; border-radius: 50%; background: var(--ink); display: grid; place-items: center; font-family: 'Fraunces', serif; font-size: 26px; color: var(--gold); font-weight: 700; flex-shrink: 0; }
+  .profile-info h3 { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 700; }
+  .profile-info p { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .kyc-banner { margin: 0 20px 16px; background: var(--green-pale); border: 1.5px solid rgba(45,106,79,.2); border-radius: var(--radius-sm); padding: 14px; display: flex; align-items: center; gap: 12px; }
+  .kyc-icon { font-size: 22px; }
+  .kyc-info { flex: 1; }
+  .kyc-title { font-size: 13px; font-weight: 600; color: var(--green); }
+  .kyc-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .settings-section { padding: 0 20px 20px; }
+  .settings-group { background: var(--card); border-radius: var(--radius-sm); border: 1.5px solid var(--border); overflow: hidden; margin-bottom: 16px; }
+  .settings-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding: 14px 16px 8px; }
+  .settings-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-top: 1px solid var(--cream); cursor: pointer; transition: background .1s; }
+  .settings-item:first-child { border-top: none; }
+  .settings-item:active { background: var(--cream); }
+  .si-icon { font-size: 18px; width: 28px; text-align: center; }
+  .si-info { flex: 1; }
+  .si-title { font-size: 14px; font-weight: 500; }
+  .si-sub { font-size: 12px; color: var(--muted); }
+  .si-arrow { color: var(--muted); }
+  .si-toggle { width: 44px; height: 26px; background: var(--green); border-radius: 100px; position: relative; cursor: pointer; }
+  .si-toggle::after { content: ''; position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: white; transition: right .2s; }
+
+  /* ── MODALS ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(14,14,14,.5);
+    z-index: 200; display: none; align-items: flex-end; justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet {
+    background: var(--paper); border-radius: 24px 24px 0 0;
+    width: 100%; max-width: 430px; max-height: 92vh;
+    overflow-y: auto; padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    animation: slideUp .3s cubic-bezier(.32,1,.3,1);
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+  .modal-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+  .form-label { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 6px; display: block; }
+  .form-input { width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 15px; font-family: 'DM Sans', sans-serif; color: var(--ink); outline: none; transition: border-color .15s; margin-bottom: 16px; }
+  .form-input:focus { border-color: var(--gold); }
+  .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8278' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+  .btn-primary { width: 100%; background: var(--ink); color: var(--paper); border: none; border-radius: 12px; padding: 16px; font-size: 16px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: opacity .15s; margin-top: 8px; }
+  .btn-primary:active { opacity: .8; }
+  .btn-secondary { width: 100%; background: transparent; color: var(--ink); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 10px; transition: background .15s; }
+  .btn-secondary:active { background: var(--cream); }
+
+  /* Amount input */
+  .amount-input-wrap { position: relative; margin-bottom: 16px; }
+  .amount-currency { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-family: 'Fraunces', serif; font-size: 20px; color: var(--muted); }
+  .amount-input { padding-left: 32px; font-family: 'Fraunces', serif; font-size: 28px; font-weight: 600; }
+
+  /* Network switcher */
+  .ns-item { display: flex; align-items: center; gap: 14px; padding: 14px; background: var(--card); border-radius: var(--radius-sm); margin-bottom: 10px; border: 1.5px solid var(--border); cursor: pointer; transition: border-color .15s; }
+  .ns-item.current { border-color: var(--gold); }
+  .ns-dot { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; }
+
+  /* Payout rotation */
+  .rotation-list { margin-bottom: 16px; }
+  .rotation-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--cream); }
+  .rotation-num { width: 28px; height: 28px; border-radius: 50%; background: var(--cream); display: grid; place-items: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .rotation-num.current { background: var(--gold); color: var(--ink); }
+  .rotation-member { flex: 1; font-size: 14px; }
+  .rotation-date { font-size: 12px; color: var(--muted); }
+  .rotation-check { color: var(--green); font-size: 18px; }
+
+  /* API connector */
+  .api-section { padding: 0 20px 16px; }
+  .api-card { background: var(--ink); color: var(--paper); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
+  .api-card h3 { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .api-card p { font-size: 13px; color: rgba(247,244,239,.6); margin-bottom: 16px; }
+  .api-key-row { background: rgba(247,244,239,.08); border-radius: 8px; padding: 12px 14px; font-family: monospace; font-size: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border: 1px solid rgba(247,244,239,.12); }
+  .api-key-val { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--gold-light); }
+  .copy-btn { background: rgba(247,244,239,.12); border: none; color: var(--paper); border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; margin-left: 8px; }
+  .copy-btn:active { background: rgba(247,244,239,.25); }
+  .endpoint-item { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 8px; }
+  .endpoint-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .method-badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; font-family: monospace; }
+  .method-GET { background: var(--green-pale); color: var(--green); }
+  .method-POST { background: var(--blue-pale); color: var(--blue); }
+  .method-DELETE { background: var(--red-pale); color: var(--red); }
+  .endpoint-path { font-family: monospace; font-size: 13px; color: var(--ink); }
+  .endpoint-desc { font-size: 12px; color: var(--muted); }
+  .webhook-card { background: var(--blue-pale); border: 1.5px solid rgba(26,86,160,.2); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 8px; }
+  .webhook-title { font-size: 13px; font-weight: 600; color: var(--blue); margin-bottom: 4px; }
+  .webhook-desc { font-size: 12px; color: var(--muted); }
+  .tab-row { display: flex; gap: 0; background: var(--cream); border-radius: 10px; padding: 3px; margin-bottom: 16px; }
+  .tab-btn { flex: 1; padding: 8px; font-size: 13px; font-weight: 500; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--muted); transition: all .15s; }
+  .tab-btn.active { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--paper); border-radius: 100px;
+    padding: 10px 20px; font-size: 13px; font-weight: 500; z-index: 300;
+    opacity: 0; transition: all .3s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Onboarding / Login */
+  .onboard-screen {
+    position: fixed; inset: 0; background: var(--ink); z-index: 500;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 30px;
+    max-width: 430px; margin: 0 auto;
+  }
+  .onboard-logo { font-family: 'Fraunces', serif; font-size: 56px; font-weight: 800; color: var(--paper); letter-spacing: -2px; margin-bottom: 8px; }
+  .onboard-logo span { color: var(--gold); }
+  .onboard-tagline { color: rgba(247,244,239,.6); font-size: 16px; text-align: center; margin-bottom: 48px; max-width: 260px; line-height: 1.5; }
+  .onboard-btn { width: 100%; background: var(--gold); color: var(--ink); border: none; border-radius: 14px; padding: 18px; font-size: 17px; font-weight: 700; font-family: 'Fraunces', serif; cursor: pointer; margin-bottom: 12px; transition: opacity .15s; }
+  .onboard-btn:active { opacity: .85; }
+  .onboard-btn-sec { width: 100%; background: transparent; color: var(--paper); border: 1.5px solid rgba(247,244,239,.25); border-radius: 14px; padding: 16px; font-size: 15px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; }
+  .onboard-features { display: flex; gap: 20px; margin-bottom: 48px; }
+  .of-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .of-icon { width: 48px; height: 48px; background: rgba(247,244,239,.08); border-radius: 14px; display: grid; place-items: center; font-size: 22px; }
+  .of-label { font-size: 11px; color: rgba(247,244,239,.5); text-align: center; max-width: 70px; }
+
+  /* Chat */
+  .chat-header { padding: 16px 20px; border-bottom: 1.5px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .chat-messages { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .chat-msg { max-width: 78%; }
+  .chat-msg.mine { align-self: flex-end; }
+  .chat-bubble { padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; }
+  .chat-msg:not(.mine) .chat-bubble { background: var(--card); border: 1.5px solid var(--cream); border-bottom-left-radius: 4px; }
+  .chat-msg.mine .chat-bubble { background: var(--ink); color: var(--paper); border-bottom-right-radius: 4px; }
+  .chat-sender { font-size: 11px; color: var(--muted); margin-bottom: 3px; font-weight: 500; }
+  .chat-input-row { padding: 12px 16px; border-top: 1.5px solid var(--border); display: flex; gap: 8px; align-items: center; }
+  .chat-input { flex: 1; background: var(--cream); border: none; border-radius: 100px; padding: 10px 16px; font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--ink); outline: none; }
+  .chat-send-btn { width: 40px; height: 40px; background: var(--ink); border: none; border-radius: 50%; display: grid; place-items: center; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+
+  /* Dispute */
+  .dispute-item { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 10px; cursor: pointer; }
+  .dispute-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .dispute-id { font-size: 12px; color: var(--muted); font-family: monospace; }
+  .dispute-status { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 100px; }
+  .ds-open { background: #fff3cd; color: #856404; }
+  .ds-resolved { background: var(--green-pale); color: var(--green); }
+  .dispute-title { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+  .dispute-desc { font-size: 13px; color: var(--muted); }
+
+  /* Audit */
+  .audit-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--cream); }
+  .audit-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); margin-top: 5px; flex-shrink: 0; }
+  .audit-text { font-size: 13px; color: var(--muted); flex: 1; }
+  .audit-text strong { color: var(--ink); }
+  .audit-time { font-size: 11px; color: var(--muted); }
+
+  /* Privacy notice */
+  .privacy-banner { background: var(--gold-pale); border: 1.5px solid rgba(200,150,62,.3); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; gap: 12px; margin: 0 20px 16px; }
+  .pb-icon { font-size: 20px; flex-shrink: 0; }
+  .pb-text { font-size: 12px; color: var(--ink); line-height: 1.5; }
+  .pb-text strong { color: var(--gold); }
+
+  .divider { height: 1px; background: var(--cream); margin: 4px 0; }
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-text { font-size: 15px; }
+
+  /* Scroll bounce effect fix */
+  .modal-sheet { -webkit-overflow-scrolling: touch; }
+
+  /* Ripple animation for active network indicator */
+  @keyframes ripple { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+  .live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green-light); margin-right: 5px; animation: ripple 2s infinite; }
+</style>
+</head>
+<body>
+
+<!-- ONBOARDING -->
+<div class="onboard-screen" id="onboardScreen">
+  <div class="onboard-logo">A<span>jo</span></div>
+  <p class="onboard-tagline">Your private digital thrift community. Save together, grow together.</p>
+  <div class="onboard-features">
+    <div class="of-item"><div class="of-icon">🔒</div><div class="of-label">Private Networks</div></div>
+    <div class="of-item"><div class="of-icon">🔄</div><div class="of-icon" style="display:none"></div><div class="of-label">Rotating Payouts</div></div>
+    <div class="of-item"><div class="of-icon">🌍</div><div class="of-label">Multi-currency</div></div>
+    <div class="of-item"><div class="of-icon">🛡️</div><div class="of-label">KYC Verified</div></div>
+  </div>
+  <button class="onboard-btn" onclick="enterApp()">Get Started</button>
+  <button class="onboard-btn-sec" onclick="enterApp()">I have an account → Sign In</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <!-- TOP BAR -->
+  <header class="topbar" id="topbar">
+    <div class="topbar-left">
+      <div class="network-pill" onclick="openNetworkSwitcher()">
+        <div class="network-dot" id="activeNetDot">FC</div>
+        <span id="activeNetName">Family Circle</span>
+        <span>⌄</span>
+      </div>
+    </div>
+    <div class="topbar-title" style="display:none">Ajo</div>
+    <div class="topbar-actions">
+      <button class="icon-btn badge" onclick="openNotifications()">🔔</button>
+      <button class="icon-btn" onclick="openChat()">💬</button>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <!-- HOME -->
+    <div class="screen active" id="screen-home">
+      <div class="wallet-card">
+        <div class="wallet-label">Network Wallet</div>
+        <div class="wallet-amount">₦<span id="walletBal">184,500</span></div>
+        <div class="wallet-sub"><span class="live-dot"></span>Family Circle · 8 members active</div>
+        <div class="wallet-actions">
+          <button class="wallet-btn" onclick="openPayModal()">⬆ Pay Dues</button>
+          <button class="wallet-btn" onclick="showToast('Withdrawal request sent')">⬇ Withdraw</button>
+          <button class="wallet-btn" onclick="showToast('Sending request...')">↗ Transfer</button>
+        </div>
+      </div>
+
+      <div class="stats-row" style="margin-top:16px">
+        <div class="stat-card">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-val">₦25,000</div>
+          <div class="stat-label">Monthly Contribution</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📅</div>
+          <div class="stat-val">Apr 5</div>
+          <div class="stat-label">Your Payout Date</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-val">7/8</div>
+          <div class="stat-label">Paid This Month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-val">3 days</div>
+          <div class="stat-label">Until Next Cycle</div>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <div class="section-title">My Groups</div>
+        <div class="see-all" onclick="switchTab('groups')">See all →</div>
+      </div>
+
+      <div class="group-card" onclick="openGroupDetail()">
+        <div class="group-card-top">
+          <div class="group-avatar" style="background:#fdf5e6">💰</div>
+          <div class="group-info">
+            <div class="group-name">Monthly Ajo — Main</div>
+            <div class="group-meta">8 members · ₦25,000/mo · Cycle 4/12</div>
+          </div>
+          <div class="group-status status-due">Due</div>
+        </div>
+        <div class="group-card-bar"><div class="group-card-bar-fill" style="width:33%"></div></div>
+      </div>
+
+      <div class="group-card" onclick="openGroupDetail()">
+        <div class="group-card-top">
+          <div class="group-avatar" style="background:#e8f5ee">🏦</div>
+          <div class="group-info">
+            <div class="group-name">Weekly Savings Pot</div>
+            <div class="group-meta">5 members · ₦5,000/week · Cycle 12/52</div>
+          </div>
+          <div class="group-status status-paid">Paid ✓</div>
+        </div>
+        <div class="group-card-bar"><div class="group-card-bar-fill" style="width:23%"></div></div>
+      </div>
+
+      <div class="section-head">
+        <div class="section-title">Recent Activity</div>
+      </div>
+      <div class="activity-item">
+        <div class="activity-icon" style="background:var(--green-pale)">⬆</div>
+        <div class="activity-info">
+          <div class="activity-title">Contribution Paid</div>
+          <div class="activity-sub">Monthly Ajo — Main · Today 9:41 AM</div>
+        </div>
+        <div class="activity-amount amount-in">+₦25,000</div>
+      </div>
+      <div class="activity-item">
+        <div class="activity-icon" style="background:#fff3cd">🔔</div>
+        <div class="activity-info">
+          <div class="activity-title">Payout Reminder</div>
+          <div class="activity-sub">Adaeze's payout is next — Apr 5</div>
+        </div>
+      </div>
+      <div class="activity-item">
+        <div class="activity-icon" style="background:var(--blue-pale)">👋</div>
+        <div class="activity-info">
+          <div class="activity-title">New Member Joined</div>
+          <div class="activity-sub">Emeka joined Family Circle</div>
+        </div>
+      </div>
+      <div class="activity-item">
+        <div class="activity-icon" style="background:var(--red-pale)">⚠</div>
+        <div class="activity-info">
+          <div class="activity-title">Missed Contribution</div>
+          <div class="activity-sub">Tunde — Weekly Savings Pot · 2 days ago</div>
+        </div>
+        <div class="activity-amount amount-out">₦5,000</div>
+      </div>
+    </div>
+
+    <!-- NETWORKS -->
+    <div class="screen" id="screen-networks">
+      <div class="networks-hero">
+        <h2>My Networks</h2>
+        <p>Switch between your private savings communities. Each network is fully isolated.</p>
+      </div>
+
+      <div class="privacy-banner">
+        <div class="pb-icon">🔐</div>
+        <div class="pb-text"><strong>Full privacy guaranteed.</strong> No platform admin can see your network data, transactions, or member information.</div>
+      </div>
+
+      <div class="network-list">
+        <div class="network-item active-net" onclick="switchNetwork('Family Circle','FC','#c8963e')">
+          <div class="net-avatar" style="background:#fdf5e6;color:#c8963e">👨‍👩‍👧</div>
+          <div class="net-info">
+            <div class="net-name">Family Circle</div>
+            <div class="net-role">Super Admin · 8 members · 2 groups</div>
+          </div>
+          <div class="net-badge owner">Owner</div>
+        </div>
+        <div class="network-item" onclick="switchNetwork('Lagos Hustle Club','LH','#2d6a4f')">
+          <div class="net-avatar" style="background:#e8f5ee;color:#2d6a4f">🏙</div>
+          <div class="net-info">
+            <div class="net-name">Lagos Hustle Club</div>
+            <div class="net-role">Member · 24 members · 5 groups</div>
+          </div>
+          <div class="net-badge">Member</div>
+        </div>
+        <div class="network-item" onclick="switchNetwork('Tech Savers','TS','#1a56a0')">
+          <div class="net-avatar" style="background:#e8f0fa;color:#1a56a0">💻</div>
+          <div class="net-info">
+            <div class="net-name">Tech Savers</div>
+            <div class="net-role">Admin · 12 members · 3 groups</div>
+          </div>
+          <div class="net-badge">Admin</div>
+        </div>
+        <div style="text-align:center;padding:24px 0 8px">
+          <button class="btn-primary" style="max-width:240px" onclick="openCreateNetwork()">+ Create New Network</button>
+          <button class="btn-secondary" style="max-width:240px;margin-top:8px" onclick="openJoinNetwork()">Enter Invite Code</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GROUPS -->
+    <div class="screen" id="screen-groups">
+      <div style="padding:20px 0 0">
+        <div style="padding:0 20px 12px">
+          <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700">Contribution Groups</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:3px">Family Circle · 2 active groups</div>
+        </div>
+        <div class="groups-filter">
+          <div class="filter-chip active">All</div>
+          <div class="filter-chip">Active</div>
+          <div class="filter-chip">Pending</div>
+          <div class="filter-chip">Completed</div>
+          <div class="filter-chip">Monthly</div>
+          <div class="filter-chip">Weekly</div>
+        </div>
+      </div>
+
+      <div class="group-detail-card" onclick="openGroupDetail()">
+        <div class="gdc-header">
+          <div class="gdc-title-row">
+            <div class="gdc-name">Monthly Ajo — Main</div>
+            <div class="group-status status-due">Due in 3 days</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">8 members · Monthly · Started Jan 2025</div>
+        </div>
+        <div class="gdc-stats">
+          <div class="gdc-stat">
+            <div class="gdc-stat-val">₦25k</div>
+            <div class="gdc-stat-label">Contribution</div>
+          </div>
+          <div class="gdc-stat">
+            <div class="gdc-stat-val">₦200k</div>
+            <div class="gdc-stat-label">Pot Size</div>
+          </div>
+          <div class="gdc-stat">
+            <div class="gdc-stat-val">4/12</div>
+            <div class="gdc-stat-label">Cycle</div>
+          </div>
+        </div>
+        <div class="gdc-footer">
+          <div class="next-payout">Next payout: <strong>Adaeze O. · Apr 5</strong></div>
+          <button class="pay-now-btn" onclick="event.stopPropagation();openPayModal()">Pay Now</button>
+        </div>
+      </div>
+
+      <div class="group-detail-card" onclick="openGroupDetail()">
+        <div class="gdc-header">
+          <div class="gdc-title-row">
+            <div class="gdc-name">Weekly Savings Pot</div>
+            <div class="group-status status-paid">Paid ✓</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">5 members · Weekly · Started Mar 2025</div>
+        </div>
+        <div class="gdc-stats">
+          <div class="gdc-stat">
+            <div class="gdc-stat-val">₦5k</div>
+            <div class="gdc-stat-label">Contribution</div>
+          </div>
+          <div class="gdc-stat">
+            <div class="gdc-stat-val">₦25k</div>
+            <div class="gdc-stat-label">Pot Size</div>
+          </div>
+          <div class="gdc-stat">
+            <div class="gdc-stat-val">12/52</div>
+            <div class="gdc-stat-label">Week</div>
+          </div>
+        </div>
+        <div class="gdc-footer">
+          <div class="next-payout">Next payout: <strong>You · Apr 8</strong></div>
+          <button class="pay-now-btn" style="background:var(--cream);color:var(--muted)" onclick="event.stopPropagation()">Paid ✓</button>
+        </div>
+      </div>
+
+      <div style="padding:12px 20px">
+        <button class="btn-primary" onclick="openCreateGroup()">+ Create Group</button>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div class="screen" id="screen-payments">
+      <div class="pay-screen-hero">
+        <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700">Payments</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:3px">Manage dues, transfers & payouts</div>
+      </div>
+
+      <div style="padding:0 20px 8px">
+        <div class="tab-row">
+          <button class="tab-btn active" onclick="switchPayTab(this,'pay-methods-tab')">Pay Dues</button>
+          <button class="tab-btn" onclick="switchPayTab(this,'pay-tx-tab')">Transactions</button>
+          <button class="tab-btn" onclick="switchPayTab(this,'pay-payout-tab')">Payouts</button>
+        </div>
+      </div>
+
+      <div id="pay-methods-tab">
+        <div style="padding:0 20px 8px;font-size:13px;font-weight:600;color:var(--muted)">CHOOSE PAYMENT METHOD</div>
+        <div class="pay-methods">
+          <div class="pay-method-card recommended" onclick="openPayModal('apple')">
+            <div class="pm-icon" style="background:#000;color:#fff;font-size:18px"> 🍎</div>
+            <div class="pm-info">
+              <div class="pm-name">Apple Pay</div>
+              <div class="pm-desc">Instant · Touch ID or Face ID</div>
+            </div>
+            <div class="pm-badge">Fastest</div>
+          </div>
+          <div class="pay-method-card" onclick="openPayModal('card')">
+            <div class="pm-icon" style="background:#e8f0fa">💳</div>
+            <div class="pm-info">
+              <div class="pm-name">Card — Stripe</div>
+              <div class="pm-desc">Visa, Mastercard · Secured by Stripe</div>
+            </div>
+            <span class="pm-arrow">›</span>
+          </div>
+          <div class="pay-method-card" onclick="openPayModal('bank')">
+            <div class="pm-icon" style="background:#e8f5ee">🏦</div>
+            <div class="pm-info">
+              <div class="pm-name">Bank Transfer</div>
+              <div class="pm-desc">Manual transfer · Reference tracking</div>
+            </div>
+            <span class="pm-arrow">›</span>
+          </div>
+          <div class="pay-method-card" onclick="openPayModal('ussd')">
+            <div class="pm-icon" style="background:#fdf5e6">📱</div>
+            <div class="pm-info">
+              <div class="pm-name">USSD</div>
+              <div class="pm-desc">No internet needed · Works on all phones</div>
+            </div>
+            <span class="pm-arrow">›</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="pay-tx-tab" style="display:none">
+        <div class="tx-list">
+          <div class="tx-date-header">Today</div>
+          <div class="tx-item">
+            <div class="tx-icon" style="background:var(--green-pale)">⬆</div>
+            <div class="tx-info">
+              <div class="tx-title">Contribution Paid</div>
+              <div class="tx-sub">Monthly Ajo — Main</div>
+            </div>
+            <div class="tx-right">
+              <div class="tx-amount amount-out">-₦25,000</div>
+              <div class="tx-status status-completed">Completed</div>
+            </div>
+          </div>
+          <div class="tx-date-header">March 20</div>
+          <div class="tx-item">
+            <div class="tx-icon" style="background:#e8f0fa">💰</div>
+            <div class="tx-info">
+              <div class="tx-title">Payout Received</div>
+              <div class="tx-sub">Weekly Savings Pot · Cycle 11</div>
+            </div>
+            <div class="tx-right">
+              <div class="tx-amount amount-in">+₦25,000</div>
+              <div class="tx-status status-completed">Completed</div>
+            </div>
+          </div>
+          <div class="tx-item">
+            <div class="tx-icon" style="background:#fff3cd">🏦</div>
+            <div class="tx-info">
+              <div class="tx-title">Bank Transfer</div>
+              <div class="tx-sub">Ref: AJO-2024-0320 · Pending confirm</div>
+            </div>
+            <div class="tx-right">
+              <div class="tx-amount amount-out">-₦5,000</div>
+              <div class="tx-status status-pending">Pending</div>
+            </div>
+          </div>
+          <div class="tx-date-header">March 15</div>
+          <div class="tx-item">
+            <div class="tx-icon" style="background:var(--red-pale)">❌</div>
+            <div class="tx-info">
+              <div class="tx-title">Payment Failed</div>
+              <div class="tx-sub">Card declined — Monthly Ajo</div>
+            </div>
+            <div class="tx-right">
+              <div class="tx-amount amount-out">₦25,000</div>
+              <div class="tx-status status-failed">Failed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="pay-payout-tab" style="display:none">
+        <div style="padding:0 20px">
+          <div style="font-size:13px;font-weight:600;color:var(--muted);padding-bottom:12px">ROTATION SCHEDULE — MONTHLY AJO</div>
+          <div class="rotation-list">
+            <div class="rotation-item">
+              <div class="rotation-num">1</div>
+              <div class="rotation-member">Chioma A.</div>
+              <div class="rotation-date">Jan 5 · ₦200k</div>
+              <div class="rotation-check">✓</div>
+            </div>
+            <div class="rotation-item">
+              <div class="rotation-num">2</div>
+              <div class="rotation-member">Tunde B.</div>
+              <div class="rotation-date">Feb 5 · ₦200k</div>
+              <div class="rotation-check">✓</div>
+            </div>
+            <div class="rotation-item">
+              <div class="rotation-num">3</div>
+              <div class="rotation-member">Ngozi C.</div>
+              <div class="rotation-date">Mar 5 · ₦200k</div>
+              <div class="rotation-check">✓</div>
+            </div>
+            <div class="rotation-item">
+              <div class="rotation-num current">4</div>
+              <div class="rotation-member"><strong>Adaeze O.</strong> ← Next</div>
+              <div class="rotation-date">Apr 5 · ₦200k</div>
+            </div>
+            <div class="rotation-item">
+              <div class="rotation-num">5</div>
+              <div class="rotation-member">You (Femi O.)</div>
+              <div class="rotation-date">May 5 · ₦200k</div>
+            </div>
+            <div class="rotation-item">
+              <div class="rotation-num">6</div>
+              <div class="rotation-member">Kemi P.</div>
+              <div class="rotation-date">Jun 5 · ₦200k</div>
+            </div>
+            <div class="rotation-item">
+              <div class="rotation-num">7</div>
+              <div class="rotation-member">Emeka S.</div>
+              <div class="rotation-date">Jul 5 · ₦200k</div>
+            </div>
+            <div class="rotation-item">
+              <div class="rotation-num">8</div>
+              <div class="rotation-member">Bola T.</div>
+              <div class="rotation-date">Aug 5 · ₦200k</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE / MORE -->
+    <div class="screen" id="screen-profile">
+      <div class="profile-hero">
+        <div class="profile-avatar">FO</div>
+        <div class="profile-info">
+          <h3>Femi Olatunji</h3>
+          <p>femi.olatunji@email.com · +234 801 234 5678</p>
+          <p style="color:var(--green);font-size:12px;margin-top:4px">✓ KYC Verified · Member since Jan 2024</p>
+        </div>
+      </div>
+
+      <div class="kyc-banner">
+        <div class="kyc-icon">🛡️</div>
+        <div class="kyc-info">
+          <div class="kyc-title">Identity Verified</div>
+          <div class="kyc-sub">BVN · NIN · Phone · Email · Face ID — All verified. Your trust score: Excellent.</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-group">
+          <div class="settings-label">Account</div>
+          <div class="settings-item" onclick="showToast('Opening profile editor...')">
+            <div class="si-icon">👤</div>
+            <div class="si-info"><div class="si-title">Edit Profile</div><div class="si-sub">Name, photo, contact details</div></div>
+            <div class="si-arrow">›</div>
+          </div>
+          <div class="settings-item" onclick="showToast('Opening KYC portal...')">
+            <div class="si-icon">🪪</div>
+            <div class="si-info"><div class="si-title">KYC & Verification</div><div class="si-sub">ID documents, BVN, NIN</div></div>
+            <div class="si-arrow">›</div>
+          </div>
+          <div class="settings-item" onclick="showToast('Loading linked banks...')">
+            <div class="si-icon">🏦</div>
+            <div class="si-info"><div class="si-title">Linked Bank Accounts</div><div class="si-sub">2 accounts connected</div></div>
+            <div class="si-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-label">Security & Privacy</div>
+          <div class="settings-item" onclick="showToast('Biometric auth enabled')">
+            <div class="si-icon">🔒</div>
+            <div class="si-info"><div class="si-title">Biometric Login</div><div class="si-sub">Face ID / Touch ID</div></div>
+            <div class="si-toggle"></div>
+          </div>
+          <div class="settings-item" onclick="showToast('2FA settings...')">
+            <div class="si-icon">📲</div>
+            <div class="si-info"><div class="si-title">Two-Factor Auth</div><div class="si-sub">SMS & Authenticator app</div></div>
+            <div class="si-arrow">›</div>
+          </div>
+          <div class="settings-item" onclick="openAuditLog()">
+            <div class="si-icon">📋</div>
+            <div class="si-info"><div class="si-title">Audit Log</div><div class="si-sub">View all account actions</div></div>
+            <div class="si-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-label">Network Tools</div>
+          <div class="settings-item" onclick="openDisputeCenter()">
+            <div class="si-icon">⚖️</div>
+            <div class="si-info"><div class="si-title">Dispute Center</div><div class="si-sub">1 open dispute</div></div>
+            <div class="si-arrow">›</div>
+          </div>
+          <div class="settings-item" onclick="openApiConnector()">
+            <div class="si-icon">🔌</div>
+            <div class="si-info"><div class="si-title">API Connector</div><div class="si-sub">Integrate with your systems</div></div>
+            <div class="si-arrow">›</div>
+          </div>
+          <div class="settings-item" onclick="showToast('Notifications configured')">
+            <div class="si-icon">🔔</div>
+            <div class="si-info"><div class="si-title">Notifications</div><div class="si-sub">Dues, payouts, messages</div></div>
+            <div class="si-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-label">Support</div>
+          <div class="settings-item" onclick="showToast('Opening Help Center...')">
+            <div class="si-icon">❓</div>
+            <div class="si-info"><div class="si-title">Help Center</div></div>
+            <div class="si-arrow">›</div>
+          </div>
+          <div class="settings-item" onclick="showToast('Contact: support@ajo.app')">
+            <div class="si-icon">💬</div>
+            <div class="si-info"><div class="si-title">Contact Support</div></div>
+            <div class="si-arrow">›</div>
+          </div>
+          <div class="settings-item" onclick="showToast('Signing out...')">
+            <div class="si-icon" style="color:var(--red)">🚪</div>
+            <div class="si-info"><div class="si-title" style="color:var(--red)">Sign Out</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('home')" id="nav-home">
+      <div class="nav-icon">🏠</div><div>Home</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('networks')" id="nav-networks">
+      <div class="nav-icon">🌐</div><div>Networks</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('groups')" id="nav-groups">
+      <div class="nav-icon">👥</div><div>Groups</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('payments')" id="nav-payments">
+      <div class="nav-icon">💳</div><div>Payments</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('profile')" id="nav-profile">
+      <div class="nav-icon">👤</div><div>Profile</div>
+    </div>
+  </nav>
+</div>
+
+<!-- ════════ MODALS ════════ -->
+
+<!-- Network Switcher -->
+<div class="modal-overlay" id="modal-networkswitcher">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Switch Network</div>
+    <div class="modal-sub">You are currently in <strong>Family Circle</strong>. Your data is fully isolated per network.</div>
+    <div class="ns-item current" onclick="switchNetwork('Family Circle','FC','#c8963e');closeModal('modal-networkswitcher')">
+      <div class="ns-dot" style="background:#fdf5e6;font-size:20px">👨‍👩‍👧</div>
+      <div class="si-info"><div class="si-title">Family Circle</div><div class="si-sub">Super Admin · 8 members</div></div>
+      <div style="color:var(--gold)">✓ Active</div>
+    </div>
+    <div class="ns-item" onclick="switchNetwork('Lagos Hustle Club','LH','#2d6a4f');closeModal('modal-networkswitcher')">
+      <div class="ns-dot" style="background:#e8f5ee;font-size:20px">🏙</div>
+      <div class="si-info"><div class="si-title">Lagos Hustle Club</div><div class="si-sub">Member · 24 members</div></div>
+      <div style="color:var(--muted)">›</div>
+    </div>
+    <div class="ns-item" onclick="switchNetwork('Tech Savers','TS','#1a56a0');closeModal('modal-networkswitcher')">
+      <div class="ns-dot" style="background:#e8f0fa;font-size:20px">💻</div>
+      <div class="si-info"><div class="si-title">Tech Savers</div><div class="si-sub">Admin · 12 members</div></div>
+      <div style="color:var(--muted)">›</div>
+    </div>
+    <button class="btn-secondary" onclick="closeModal('modal-networkswitcher')">Cancel</button>
+  </div>
+</div>
+
+<!-- Pay Modal -->
+<div class="modal-overlay" id="modal-pay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Pay Contribution</div>
+    <div class="modal-sub">Monthly Ajo — Main · April 2025</div>
+    <label class="form-label">Amount</label>
+    <div class="amount-input-wrap">
+      <span class="amount-currency">₦</span>
+      <input type="number" class="form-input amount-input" value="25000" id="payAmount">
+    </div>
+    <label class="form-label">Payment Method</label>
+    <select class="form-input form-select" id="payMethod">
+      <option value="apple">🍎 Apple Pay</option>
+      <option value="card">💳 Card (Stripe)</option>
+      <option value="bank">🏦 Bank Transfer</option>
+      <option value="ussd">📱 USSD</option>
+    </select>
+    <div id="ussdInfo" style="display:none;background:var(--gold-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px">
+      <strong>USSD Code:</strong> *737*000*25000# (GTBank)<br>
+      <strong>Reference:</strong> AJO-FC-202504-0423<br>
+      <span style="color:var(--muted)">Dial this code from your registered number. Payment confirms within 60 seconds.</span>
+    </div>
+    <div id="bankInfo" style="display:none;background:var(--green-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px">
+      <strong>Bank:</strong> Zenith Bank · <strong>Account:</strong> 1234567890<br>
+      <strong>Name:</strong> AJO FAMILY CIRCLE POOL<br>
+      <strong>Reference:</strong> AJO-FC-202504-0423 <em>(required)</em><br>
+      <span style="color:var(--muted)">Transfer exact amount and include reference. Admin confirms within 2 hours.</span>
+    </div>
+    <button class="btn-primary" id="payConfirmBtn" onclick="confirmPayment()">Confirm Payment</button>
+    <button class="btn-secondary" onclick="closeModal('modal-pay')">Cancel</button>
+  </div>
+</div>
+
+<!-- Create Network -->
+<div class="modal-overlay" id="modal-create-network">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Create a Network</div>
+    <div class="modal-sub">Your private savings community — fully isolated from other networks.</div>
+    <label class="form-label">Network Name</label>
+    <input class="form-input" placeholder="e.g. Okafor Family Ajo" type="text">
+    <label class="form-label">Description</label>
+    <input class="form-input" placeholder="What is this network for?" type="text">
+    <label class="form-label">Visibility</label>
+    <select class="form-input form-select">
+      <option>Private (invite only)</option>
+      <option>Semi-private (link access)</option>
+    </select>
+    <label class="form-label">Currency</label>
+    <select class="form-input form-select">
+      <option>NGN — Nigerian Naira</option>
+      <option>USD — US Dollar</option>
+      <option>GBP — British Pound</option>
+      <option>GHS — Ghanaian Cedi</option>
+    </select>
+    <button class="btn-primary" onclick="showToast('Network created! Invite link generated ✓');closeModal('modal-create-network')">Create Network</button>
+    <button class="btn-secondary" onclick="closeModal('modal-create-network')">Cancel</button>
+  </div>
+</div>
+
+<!-- Join Network -->
+<div class="modal-overlay" id="modal-join-network">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Join a Network</div>
+    <div class="modal-sub">Enter the invite code or link shared by a network admin.</div>
+    <label class="form-label">Invite Code</label>
+    <input class="form-input" placeholder="e.g. AJO-XXXX-XXXX" type="text" style="font-family:monospace;letter-spacing:.1em;text-transform:uppercase">
+    <button class="btn-primary" onclick="showToast('Joining network… Verification pending ✓');closeModal('modal-join-network')">Request to Join</button>
+    <button class="btn-secondary" onclick="closeModal('modal-join-network')">Cancel</button>
+  </div>
+</div>
+
+<!-- Create Group -->
+<div class="modal-overlay" id="modal-create-group">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Create Group</div>
+    <div class="modal-sub">Set up a contribution cycle for your network members.</div>
+    <label class="form-label">Group Name</label>
+    <input class="form-input" placeholder="e.g. Q2 Monthly Ajo" type="text">
+    <label class="form-label">Cycle Type</label>
+    <select class="form-input form-select">
+      <option>Monthly</option>
+      <option>Weekly</option>
+      <option>Daily</option>
+      <option>Custom</option>
+    </select>
+    <label class="form-label">Contribution Amount (₦)</label>
+    <input class="form-input" placeholder="e.g. 25000" type="number">
+    <label class="form-label">Max Members</label>
+    <input class="form-input" placeholder="e.g. 10" type="number">
+    <label class="form-label">Payout Order</label>
+    <select class="form-input form-select">
+      <option>Random (shuffled)</option>
+      <option>Fixed (admin assigns)</option>
+      <option>Bid-based</option>
+    </select>
+    <label class="form-label">Start Date</label>
+    <input class="form-input" type="date">
+    <button class="btn-primary" onclick="showToast('Group created! Inviting members...');closeModal('modal-create-group')">Create Group</button>
+    <button class="btn-secondary" onclick="closeModal('modal-create-group')">Cancel</button>
+  </div>
+</div>
+
+<!-- Group Detail -->
+<div class="modal-overlay" id="modal-group-detail">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <div style="width:48px;height:48px;border-radius:12px;background:#fdf5e6;display:grid;place-items:center;font-size:22px">💰</div>
+      <div>
+        <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700">Monthly Ajo — Main</div>
+        <div style="font-size:12px;color:var(--muted)">Family Circle · 8 members</div>
+      </div>
+    </div>
+    <div class="stats-row" style="padding:0 0 16px">
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-val">₦200k</div><div class="stat-label">Pot This Cycle</div></div>
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val">4/12</div><div class="stat-label">Current Cycle</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val">7/8</div><div class="stat-label">Paid This Month</div></div>
+      <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-val">3d</div><div class="stat-label">Days Left</div></div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:10px">MEMBERS STATUS</div>
+    <div style="margin-bottom:16px">
+      <div class="activity-item" style="padding:8px 0">
+        <div class="activity-icon" style="background:var(--green-pale);width:32px;height:32px;font-size:14px">✓</div>
+        <div class="activity-info"><div class="activity-title" style="font-size:13px">Chioma A.</div></div>
+        <div style="font-size:12px;color:var(--green)">Paid</div>
+      </div>
+      <div class="activity-item" style="padding:8px 0">
+        <div class="activity-icon" style="background:var(--red-pale);width:32px;height:32px;font-size:14px">!</div>
+        <div class="activity-info"><div class="activity-title" style="font-size:13px">Tunde B.</div></div>
+        <div style="font-size:12px;color:var(--red)">Overdue</div>
+      </div>
+      <div class="activity-item" style="padding:8px 0">
+        <div class="activity-icon" style="background:var(--green-pale);width:32px;height:32px;font-size:14px">✓</div>
+        <div class="activity-info"><div class="activity-title" style="font-size:13px">You (Femi O.)</div></div>
+        <div style="font-size:12px;color:var(--green)">Paid</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="openPayModal();closeModal('modal-group-detail')">Pay My Dues</button>
+    <button class="btn-secondary" onclick="showToast('Reminders sent to unpaid members');closeModal('modal-group-detail')">Send Reminder to Unpaid</button>
+  </div>
+</div>
+
+<!-- Chat Modal -->
+<div class="modal-overlay" id="modal-chat">
+  <div class="modal-sheet" style="padding:0;display:flex;flex-direction:column;height:85vh">
+    <div class="modal-handle" style="margin:12px auto 0"></div>
+    <div class="chat-header">
+      <div class="net-avatar" style="width:38px;height:38px;border-radius:10px;background:#fdf5e6;font-size:16px">👨‍👩‍👧</div>
+      <div class="si-info"><div class="si-title">Family Circle</div><div class="si-sub">8 members · Network Chat</div></div>
+      <button class="icon-btn" onclick="closeModal('modal-chat')">✕</button>
+    </div>
+    <div class="chat-messages" style="flex:1;overflow-y:auto">
+      <div class="chat-msg">
+        <div class="chat-sender">Chioma A.</div>
+        <div class="chat-bubble">Hi everyone! Just paid my contribution for April 🎉</div>
+      </div>
+      <div class="chat-msg">
+        <div class="chat-sender">Tunde B.</div>
+        <div class="chat-bubble">Great! I'll pay by tomorrow, had some bank issues 🙏</div>
+      </div>
+      <div class="chat-msg mine">
+        <div class="chat-bubble">No worries Tunde. Adaeze, are you ready for your payout next week?</div>
+      </div>
+      <div class="chat-msg">
+        <div class="chat-sender">Adaeze O.</div>
+        <div class="chat-bubble">Yes! Can't wait, this is going straight to school fees 😊</div>
+      </div>
+      <div class="chat-msg">
+        <div class="chat-sender">System</div>
+        <div class="chat-bubble" style="background:var(--gold-pale);border-color:rgba(200,150,62,.3);font-size:12px">📢 Reminder: 1 member yet to pay. Cycle closes in 3 days.</div>
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" placeholder="Message Family Circle…" type="text" id="chatInput">
+      <button class="chat-send-btn" onclick="sendChatMessage()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notifications -->
+<div class="modal-overlay" id="modal-notifications">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Notifications</div>
+    <div class="activity-item">
+      <div class="activity-icon" style="background:#fff3cd">⏰</div>
+      <div class="activity-info"><div class="activity-title">Dues Reminder</div><div class="activity-sub">Monthly Ajo — ₦25,000 due in 3 days</div></div>
+      <div style="font-size:11px;color:var(--muted)">2h ago</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-icon" style="background:var(--green-pale)">💰</div>
+      <div class="activity-info"><div class="activity-title">Payout Scheduled</div><div class="activity-sub">Adaeze's payout confirmed for Apr 5</div></div>
+      <div style="font-size:11px;color:var(--muted)">1d ago</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-icon" style="background:var(--blue-pale)">👋</div>
+      <div class="activity-info"><div class="activity-title">New Member</div><div class="activity-sub">Emeka joined Family Circle</div></div>
+      <div style="font-size:11px;color:var(--muted)">2d ago</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-icon" style="background:var(--red-pale)">⚠</div>
+      <div class="activity-info"><div class="activity-title">Missed Payment</div><div class="activity-sub">Tunde has not paid for April yet</div></div>
+      <div style="font-size:11px;color:var(--muted)">3d ago</div>
+    </div>
+    <button class="btn-secondary" onclick="closeModal('modal-notifications')">Close</button>
+  </div>
+</div>
+
+<!-- Audit Log -->
+<div class="modal-overlay" id="modal-audit">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Audit Log</div>
+    <div class="modal-sub">All actions within Family Circle — tamper-proof</div>
+    <div style="padding-bottom:8px">
+      <div class="audit-item">
+        <div class="audit-dot"></div>
+        <div class="audit-info" style="flex:1">
+          <div class="audit-text"><strong>Femi O.</strong> paid contribution ₦25,000 — Monthly Ajo</div>
+          <div class="audit-time">Today 9:41 AM · Ref: AJO-20250323-001</div>
+        </div>
+      </div>
+      <div class="audit-item">
+        <div class="audit-dot" style="background:var(--green-light)"></div>
+        <div class="audit-info" style="flex:1">
+          <div class="audit-text"><strong>System</strong> confirmed payout ₦200,000 to Ngozi C. (Cycle 3)</div>
+          <div class="audit-time">Mar 5, 2025 10:00 AM</div>
+        </div>
+      </div>
+      <div class="audit-item">
+        <div class="audit-dot" style="background:var(--blue)"></div>
+        <div class="audit-info" style="flex:1">
+          <div class="audit-text"><strong>Femi O.</strong> (Admin) added Emeka S. to Family Circle</div>
+          <div class="audit-time">Mar 21, 2025 3:15 PM</div>
+        </div>
+      </div>
+      <div class="audit-item">
+        <div class="audit-dot" style="background:var(--red)"></div>
+        <div class="audit-info" style="flex:1">
+          <div class="audit-text"><strong>System</strong> flagged Tunde B. for missed payment — April cycle</div>
+          <div class="audit-time">Mar 20, 2025 11:59 PM</div>
+        </div>
+      </div>
+      <div class="audit-item">
+        <div class="audit-dot" style="background:var(--muted)"></div>
+        <div class="audit-info" style="flex:1">
+          <div class="audit-text"><strong>Femi O.</strong> created group "Monthly Ajo — Main"</div>
+          <div class="audit-time">Jan 1, 2025 9:00 AM</div>
+        </div>
+      </div>
+    </div>
+    <div style="background:var(--cream);border-radius:10px;padding:12px;font-size:12px;color:var(--muted);text-align:center">
+      🔒 Logs are immutable and cryptographically signed. Platform admins cannot access or modify this log.
+    </div>
+    <button class="btn-secondary" style="margin-top:12px" onclick="closeModal('modal-audit')">Close</button>
+  </div>
+</div>
+
+<!-- Dispute Center -->
+<div class="modal-overlay" id="modal-disputes">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Dispute Center</div>
+    <div class="modal-sub">Family Circle · Resolve issues within your network</div>
+    <div class="dispute-item" onclick="showToast('Opening dispute #DSP-001...')">
+      <div class="dispute-header">
+        <div class="dispute-id">#DSP-001 · Apr 2, 2025</div>
+        <div class="dispute-status ds-open">Open</div>
+      </div>
+      <div class="dispute-title">Tunde B. — Missed April Payment</div>
+      <div class="dispute-desc">Member claims bank transfer was made but not recorded. Reference uploaded.</div>
+    </div>
+    <div class="dispute-item" onclick="showToast('Viewing resolved dispute...')">
+      <div class="dispute-header">
+        <div class="dispute-id">#DSP-000 · Feb 15, 2025</div>
+        <div class="dispute-status ds-resolved">Resolved</div>
+      </div>
+      <div class="dispute-title">Payout Timing — Ngozi C.</div>
+      <div class="dispute-desc">Resolved: Payout delayed by 1 day due to bank holiday. Confirmed received.</div>
+    </div>
+    <button class="btn-primary" onclick="showToast('Opening new dispute form...');closeModal('modal-disputes')">+ Raise New Dispute</button>
+    <button class="btn-secondary" onclick="closeModal('modal-disputes')">Close</button>
+  </div>
+</div>
+
+<!-- API Connector -->
+<div class="modal-overlay" id="modal-api">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">API Connector</div>
+    <div class="modal-sub">Integrate Ajo with your systems. All API access is network-scoped.</div>
+
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchApiTab(this,'api-keys-tab')">API Keys</button>
+      <button class="tab-btn" onclick="switchApiTab(this,'api-endpoints-tab')">Endpoints</button>
+      <button class="tab-btn" onclick="switchApiTab(this,'api-webhooks-tab')">Webhooks</button>
+    </div>
+
+    <div id="api-keys-tab">
+      <div class="api-card">
+        <h3>Family Circle API</h3>
+        <p>Keys are scoped to this network only. Never share your secret key.</p>
+        <div style="font-size:11px;color:rgba(247,244,239,.5);margin-bottom:8px">PUBLISHABLE KEY</div>
+        <div class="api-key-row">
+          <span class="api-key-val">pk_live_ajo_fc_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6</span>
+          <button class="copy-btn" onclick="copyToClip('pk_live_ajo_fc_a1b2c3d4e5f6g7h8')">Copy</button>
+        </div>
+        <div style="font-size:11px;color:rgba(247,244,239,.5);margin:8px 0">SECRET KEY</div>
+        <div class="api-key-row">
+          <span class="api-key-val">sk_live_••••••••••••••••••••••••••••••••</span>
+          <button class="copy-btn" onclick="showToast('Secret key revealed. Keep private!')">Reveal</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0 4px">
+        🔐 API keys are isolated per network. A key from Family Circle cannot access Lagos Hustle Club data.
+      </div>
+      <button class="btn-secondary" onclick="showToast('Regenerating keys...')">Regenerate Keys</button>
+    </div>
+
+    <div id="api-endpoints-tab" style="display:none">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Base URL: <code style="background:var(--cream);padding:2px 6px;border-radius:4px;font-size:11px">https://api.ajo.app/v1</code></div>
+      <div class="endpoint-item">
+        <div class="endpoint-row"><span class="method-badge method-GET">GET</span><span class="endpoint-path">/networks/{id}/members</span></div>
+        <div class="endpoint-desc">List all members in a network (auth required)</div>
+      </div>
+      <div class="endpoint-item">
+        <div class="endpoint-row"><span class="method-badge method-GET">GET</span><span class="endpoint-path">/networks/{id}/groups</span></div>
+        <div class="endpoint-desc">Fetch all contribution groups</div>
+      </div>
+      <div class="endpoint-item">
+        <div class="endpoint-row"><span class="method-badge method-POST">POST</span><span class="endpoint-path">/networks/{id}/contributions</span></div>
+        <div class="endpoint-desc">Record a contribution payment</div>
+      </div>
+      <div class="endpoint-item">
+        <div class="endpoint-row"><span class="method-badge method-GET">GET</span><span class="endpoint-path">/networks/{id}/transactions</span></div>
+        <div class="endpoint-desc">Get transaction ledger (network-scoped)</div>
+      </div>
+      <div class="endpoint-item">
+        <div class="endpoint-row"><span class="method-badge method-POST">POST</span><span class="endpoint-path">/networks/{id}/payouts</span></div>
+        <div class="endpoint-desc">Trigger a payout to the next member</div>
+      </div>
+      <div class="endpoint-item">
+        <div class="endpoint-row"><span class="method-badge method-DELETE">DELETE</span><span class="endpoint-path">/networks/{id}/members/{uid}</span></div>
+        <div class="endpoint-desc">Remove a member from the network</div>
+      </div>
+      <div class="endpoint-item">
+        <div class="endpoint-row"><span class="method-badge method-GET">GET</span><span class="endpoint-path">/users/{id}/kyc</span></div>
+        <div class="endpoint-desc">Check user KYC/verification status</div>
+      </div>
+      <div class="endpoint-item">
+        <div class="endpoint-row"><span class="method-badge method-POST">POST</span><span class="endpoint-path">/networks/{id}/disputes</span></div>
+        <div class="endpoint-desc">Create or update a dispute record</div>
+      </div>
+    </div>
+
+    <div id="api-webhooks-tab" style="display:none">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Receive real-time event notifications to your endpoint.</div>
+      <div class="webhook-card">
+        <div class="webhook-title">contribution.paid</div>
+        <div class="webhook-desc">Fires when a member successfully pays their contribution</div>
+      </div>
+      <div class="webhook-card">
+        <div class="webhook-title">payout.completed</div>
+        <div class="webhook-desc">Fires when a payout is disbursed to a member</div>
+      </div>
+      <div class="webhook-card">
+        <div class="webhook-title">member.joined / member.removed</div>
+        <div class="webhook-desc">Network membership changes</div>
+      </div>
+      <div class="webhook-card">
+        <div class="webhook-title">contribution.missed</div>
+        <div class="webhook-desc">Fires when a member misses their payment deadline</div>
+      </div>
+      <div class="webhook-card">
+        <div class="webhook-title">dispute.opened / dispute.resolved</div>
+        <div class="webhook-desc">Dispute lifecycle events within the network</div>
+      </div>
+      <label class="form-label" style="margin-top:8px">Webhook URL</label>
+      <input class="form-input" placeholder="https://your-server.com/ajo-webhook" type="url">
+      <button class="btn-primary" onclick="showToast('Webhook endpoint saved ✓')">Save Webhook URL</button>
+    </div>
+
+    <button class="btn-secondary" style="margin-top:10px" onclick="closeModal('modal-api')">Close</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── ONBOARD ───
+function enterApp() {
+  document.getElementById('onboardScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+}
+
+// ─── TAB NAV ───
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  document.getElementById('nav-' + tab).classList.add('active');
+}
+
+// ─── MODALS ───
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ─── TOAST ───
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── NETWORK SWITCHER ───
+function openNetworkSwitcher() { openModal('modal-networkswitcher'); }
+function switchNetwork(name, initials, color) {
+  document.getElementById('activeNetName').textContent = name;
+  document.getElementById('activeNetDot').textContent = initials;
+  document.getElementById('activeNetDot').style.background = color;
+  showToast('Switched to ' + name);
+  // Update active state in network list
+  document.querySelectorAll('.network-item').forEach(i => i.classList.remove('active-net'));
+}
+
+// ─── PAY MODAL ───
+function openPayModal(method) {
+  openModal('modal-pay');
+  if (method) document.getElementById('payMethod').value = method;
+  updatePayInfo();
+}
+document.getElementById('payMethod') && document.getElementById('payMethod').addEventListener('change', updatePayInfo);
+function updatePayInfo() {
+  const m = document.getElementById('payMethod').value;
+  document.getElementById('ussdInfo').style.display = m === 'ussd' ? 'block' : 'none';
+  document.getElementById('bankInfo').style.display = m === 'bank' ? 'block' : 'none';
+}
+function confirmPayment() {
+  const amt = document.getElementById('payAmount').value;
+  const m = document.getElementById('payMethod').value;
+  const labels = {apple:'Apple Pay',card:'Card',bank:'Bank Transfer',ussd:'USSD'};
+  showToast(`₦${Number(amt).toLocaleString()} via ${labels[m] || m} — Processing ✓`);
+  closeModal('modal-pay');
+  document.getElementById('walletBal').textContent = (184500 + parseInt(amt)).toLocaleString();
+}
+
+// ─── NETWORK ACTIONS ───
+function openCreateNetwork() { openModal('modal-create-network'); }
+function openJoinNetwork() { openModal('modal-join-network'); }
+function openCreateGroup() { openModal('modal-create-group'); }
+function openGroupDetail() { openModal('modal-group-detail'); }
+function openChat() { openModal('modal-chat'); }
+function openNotifications() { openModal('modal-notifications'); }
+function openAuditLog() { openModal('modal-audit'); }
+function openDisputeCenter() { openModal('modal-disputes'); }
+function openApiConnector() { openModal('modal-api'); }
+
+// ─── CHAT ───
+function sendChatMessage() {
+  const inp = document.getElementById('chatInput');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  const wrap = document.querySelector('#modal-chat .chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg mine';
+  div.innerHTML = `<div class="chat-bubble">${msg}</div>`;
+  wrap.appendChild(div);
+  inp.value = '';
+  wrap.scrollTop = wrap.scrollHeight;
+}
+document.getElementById('chatInput') && document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChatMessage();
+});
+
+// ─── PAY TABS ───
+function switchPayTab(btn, tabId) {
+  document.querySelectorAll('#screen-payments .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['pay-methods-tab','pay-tx-tab','pay-payout-tab'].forEach(id => {
+    document.getElementById(id).style.display = id === tabId ? 'block' : 'none';
+  });
+}
+
+// ─── API TABS ───
+function switchApiTab(btn, tabId) {
+  document.querySelectorAll('#modal-api .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['api-keys-tab','api-endpoints-tab','api-webhooks-tab'].forEach(id => {
+    document.getElementById(id).style.display = id === tabId ? 'block' : 'none';
+  });
+}
+
+// ─── COPY ───
+function copyToClip(text) {
+  navigator.clipboard.writeText(text).catch(() => {});
+  showToast('Copied to clipboard ✓');
+}
+
+// ─── FILTER CHIPS ───
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    this.closest('.groups-filter').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// Init pay method info
+updatePayInfo();
+</script>
+</body>
+</html>
